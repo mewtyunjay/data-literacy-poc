@@ -1,31 +1,32 @@
-# example form streamlit documentation
-from openai import OpenAI
+import ollama
 import streamlit as st
 
+model = "llama3.1"
+ollama.pull(model)
+
+st.title("Data literacy chatbot")
+st.caption(f"A Streamlit chatbot powered by {model}")
+
 with st.sidebar:
-    openai_api_key = st.text_input("OpenAI API Key", key="chatbot_api_key", type="password")
-    "[Get an OpenAI API key](https://platform.openai.com/account/api-keys)"
-    "[View the source code](https://github.com/streamlit/llm-examples/blob/main/Chatbot.py)"
-    "[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/streamlit/llm-examples?quickstart=1)"
+    # st.sidebar.title("Resources")
+    "[View the source code](https://github.com/mewtyunjay/data-literacy-poc)"
 
-st.title("Chatbot")
-st.caption("A Streamlit chatbot powered by OpenAI")
+st.write("Let's start! First, fill the box below with your thesis and beliefs on the topic")
+main_thesis = st.text_input(label="Thesis", placeholder="Example: I believe that teenagers should not use social media because it is hurtful")
 
-if "messages" not in st.session_state:
-    st.session_state["messages"] = [{"role": "assistant", "content": "How can I help you?"}]
+if main_thesis != "":
+    if "messages" not in st.session_state:
+        st.session_state["messages"] = [{"role": "assistant", "content": "How can I help you?"}]
 
-for msg in st.session_state.messages:
-    st.chat_message(msg["role"]).write(msg["content"])
+    for msg in st.session_state.messages:
+        st.chat_message(msg["role"]).write(msg["content"])
 
-if prompt := st.chat_input():
-    if not openai_api_key:
-        st.info("Please add your OpenAI API key to continue.")
-        st.stop()
+    if prompt := st.chat_input():
+        st.session_state.messages.append({"role": "user", "content": prompt})
+        st.chat_message("user").write(prompt)
+        response = ollama.chat(model=model, messages=st.session_state.messages)
 
-    client = OpenAI(api_key=openai_api_key)
-    st.session_state.messages.append({"role": "user", "content": prompt})
-    st.chat_message("user").write(prompt)
-    response = client.chat.completions.create(model="gpt-3.5-turbo", messages=st.session_state.messages)
-    msg = response.choices[0].message.content
-    st.session_state.messages.append({"role": "assistant", "content": msg})
-    st.chat_message("assistant").write(msg)
+        msg = response["message"]["content"]
+
+        st.session_state.messages.append({"role": "assistant", "content": msg})
+        st.chat_message("assistant").write(msg)
