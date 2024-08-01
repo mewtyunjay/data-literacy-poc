@@ -8,29 +8,60 @@ model = "llama3.1"
 ollama.pull(model)
 
 st.title("Data literacy chatbot")
-st.caption(f"A Streamlit chatbot powered by {model}")
+
+@st.dialog("What topic would you like to discuss?")
+def choose_main_topic():
+    main_topic = st.radio(
+        "",
+        ["Social media usage by teenagers", "Gun violence"],
+        index=None,
+    )
+
+    if st.button("Submit"):
+        st.session_state.main_topic = main_topic
+        st.rerun()
+
 
 with st.sidebar:
     "[View the source code](https://github.com/mewtyunjay/data-literacy-poc)"
-    st.sidebar.title("Evidences")
 
-st.write("Let's start! First, fill the box below with your thesis and beliefs on the topic")
+# main_topic = choose_main_topic()
+main_thesis = ""
 
-main_thesis = st.text_input(label="Thesis", placeholder="Example: I believe that teenagers should not use social media because it is hurtful")
-main_topic = "Social media usage by teenagers"
+if "main_topic" not in st.session_state:
+    choose_main_topic()
+else:
+    st.write(
+        f"Let's start discussing {st.session_state.main_topic}! First, fill out the box below with your thesis and beliefs on the topic"
+    )
 
-welcome_message = f"Ok, so you need to build an argument about {main_topic} and your starting point of view is \"{main_thesis}\""
+    main_thesis = st.text_input(
+        label="Thesis",
+        placeholder="Example: I believe that teenagers should not use social media because it is hurtful",
+    )
 
 if main_thesis != "":
+    # update sidebar with evidences
+    # TODO: create specific evidences for specific discussion topics
     with st.sidebar:
-        "[View the source code](https://github.com/mewtyunjay/data-literacy-poc)"
         st.sidebar.title("Evidences")
         evidences = glob.glob("evidence/*.png")
+        # pick_image = st.sidebar.radio(
+        #         "Choose a evidence to start with",
+        #         [e for e in evidences])
+        st.sidebar.image(evidences)
+    # st.text(f"You chose image {pick_image}")
 
-        for e in evidences:
-            st.image(e)
+    welcome_message = f'Ok, so you need to build an argument about "{main_topic}" \
+    and your starting point of view is "{main_thesis}".\nOn your left \
+    your should be able to see evidences for the topic you want to discuss, \
+    choose one and let\'s analyze it together'
+
     if "messages" not in st.session_state:
-        st.session_state["messages"] = [{"role": "assistant", "content": f"{welcome_message}. How can I help you?"}]
+        st.session_state["messages"] = [
+            {"role": "assistant", "content": f"{welcome_message}"}
+        ]
+
 
     for msg in st.session_state.messages:
         st.chat_message(msg["role"]).write(msg["content"])
