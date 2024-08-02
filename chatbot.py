@@ -52,7 +52,8 @@ if main_thesis != "":
         st.sidebar.image(evidences)
     # st.text(f"You chose image {pick_image}")
 
-    welcome_message = f'Ok, so you need to build an argument about "{main_topic}" \
+    welcome_message = f'Ok, so you need to build an argument about
+    "{st.session_state.main_topic}" \
     and your starting point of view is "{main_thesis}".\nOn your left \
     your should be able to see evidences for the topic you want to discuss, \
     choose one and let\'s analyze it together'
