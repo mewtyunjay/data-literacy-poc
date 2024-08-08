@@ -1,11 +1,8 @@
 import glob
 import os
 
-import ollama
+from openai import OpenAI
 import streamlit as st
-
-model = "llama3.1"
-ollama.pull(model)
 
 st.title("Data literacy chatbot")
 
@@ -25,7 +22,6 @@ def choose_main_topic():
 with st.sidebar:
     "[View the source code](https://github.com/mewtyunjay/data-literacy-poc)"
 
-# main_topic = choose_main_topic()
 main_thesis = ""
 
 if "main_topic" not in st.session_state:
@@ -41,18 +37,15 @@ else:
     )
 
 if main_thesis != "":
+    client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
     # update sidebar with evidences
     # TODO: create specific evidences for specific discussion topics
     with st.sidebar:
         st.sidebar.title("Evidences")
         evidences = glob.glob("evidence/*.png")
-        # pick_image = st.sidebar.radio(
-        #         "Choose a evidence to start with",
-        #         [e for e in evidences])
         st.sidebar.image(evidences)
-    # st.text(f"You chose image {pick_image}")
 
-    welcome_message = f'Ok, so you need to build an argument about
+    welcome_message = f'Ok, so you need to build an argument about \
     "{st.session_state.main_topic}" \
     and your starting point of view is "{main_thesis}".\nOn your left \
     your should be able to see evidences for the topic you want to discuss, \
@@ -70,9 +63,8 @@ if main_thesis != "":
     if prompt := st.chat_input():
         st.session_state.messages.append({"role": "user", "content": prompt})
         st.chat_message("user").write(prompt)
-        response = ollama.chat(model=model, messages=st.session_state.messages)
-
-        msg = response["message"]["content"]
+        response = client.chat.completions.create(model="gpt-4o-mini", messages=st.session_state.messages)
+        msg = response.choices[0].message.content
 
         st.session_state.messages.append({"role": "assistant", "content": msg})
         st.chat_message("assistant").write(msg)
