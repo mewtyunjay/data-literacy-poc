@@ -38,23 +38,6 @@ else:
         placeholder="Example: I believe that teenagers should not use social media because it is hurtful",
     )
 
-# # TEST
-# evidence_paths = glob.glob("evidence/*.png")
-# evidence_images = []
-# for file in evidence_paths:
-#     with open(file, "rb") as image:
-#         encoded = base64.b64encode(image.read()).decode()
-#         evidence_images.append(f"data:image/jpeg;base64,{encoded}")
-
-
-
-# clicked = clickable_images(
-#         evidence_images,
-#         titles=[f"Image #{str(i)}" for i in range(len(evidence_images))],
-#         div_style={"display": "flex", "justify-content": "center",
-#             "flex-wrap": "wrap"},
-#         img_style={"margin": "5px", "height": "200px"},
-#         )
 
 if main_thesis != "":
     client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
@@ -92,7 +75,7 @@ if main_thesis != "":
         ]
 
     if st.session_state.clicked > -1:
-        st.chat_message("assistant").write(f"Image #{st.session_state.clicked} clicked")
+        st.chat_message("assistant").image(evidence_paths[st.session_state.clicked])
 
     for msg in st.session_state.messages:
         st.chat_message(msg["role"]).write(msg["content"])
