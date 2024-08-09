@@ -1,8 +1,10 @@
+import base64
 import glob
 import os
 
-from openai import OpenAI
 import streamlit as st
+from openai import OpenAI
+from st_clickable_images import clickable_images
 
 st.title("Data literacy chatbot")
 
@@ -36,14 +38,47 @@ else:
         placeholder="Example: I believe that teenagers should not use social media because it is hurtful",
     )
 
+# # TEST
+# evidence_paths = glob.glob("evidence/*.png")
+# evidence_images = []
+# for file in evidence_paths:
+#     with open(file, "rb") as image:
+#         encoded = base64.b64encode(image.read()).decode()
+#         evidence_images.append(f"data:image/jpeg;base64,{encoded}")
+
+
+
+# clicked = clickable_images(
+#         evidence_images,
+#         titles=[f"Image #{str(i)}" for i in range(len(evidence_images))],
+#         div_style={"display": "flex", "justify-content": "center",
+#             "flex-wrap": "wrap"},
+#         img_style={"margin": "5px", "height": "200px"},
+#         )
+
 if main_thesis != "":
     client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
     # update sidebar with evidences
     # TODO: create specific evidences for specific discussion topics
     with st.sidebar:
         st.sidebar.title("Evidences")
-        evidences = glob.glob("evidence/*.png")
-        st.sidebar.image(evidences)
+        evidence_paths = glob.glob("evidence/*.png")
+        evidence_images = []
+        for file in evidence_paths:
+            with open(file, "rb") as image:
+                encoded = base64.b64encode(image.read()).decode()
+                evidence_images.append(f"data:image/jpeg;base64,{encoded}")
+
+        # st.sidebar.image(clickable_images(evidence_images))
+        clicked = clickable_images(
+            evidence_images,
+            titles=[f"Image #{str(i)}" for i in range(len(evidence_images))],
+            div_style={"display": "flex", "justify-content": "center",
+                "flex-wrap": "wrap"},
+            img_style={"margin": "5px", "height": "200px"},
+        )
+
+        st.session_state["clicked"] = clicked
 
     welcome_message = f'Ok, so you need to build an argument about \
     "{st.session_state.main_topic}" \
@@ -56,6 +91,8 @@ if main_thesis != "":
             {"role": "assistant", "content": f"{welcome_message}"}
         ]
 
+    if st.session_state.clicked > -1:
+        st.chat_message("assistant").write(f"Image #{st.session_state.clicked} clicked")
 
     for msg in st.session_state.messages:
         st.chat_message(msg["role"]).write(msg["content"])
