@@ -78,14 +78,22 @@ if main_thesis != "":
         st.chat_message(msg["role"]).write(msg["content"])
 
     if prompt := st.chat_input():
-        text_content = {"type": "text", "prompt": prompt}
+        text_content = {"type": "text", "text": prompt}
         content = [text_content]
 
         if st.session_state.clicked > -1:
-            st.chat_message("assistant").image(evidence_paths[st.session_state.clicked])
+            st.image(evidence_paths[st.session_state.clicked])
+
             st.session_state.clicked_image = evidence_images[st.session_state.clicked]
-            content.append({"type": "image_url", "image_url": {"url": f"{evidence_images[st.session_state.clicked]}}"})
-            print("\n\n", content, "\n\n")
+            content.append({
+                "type": "image_url",
+                "image_url": {
+                    "url": f"{evidence_images[st.session_state.clicked]}"
+                    }
+                })
+
+            # reset clicked image
+            st.session_state.clicked = -1
 
         st.session_state.messages.append({"role": "user", "content": content})
         st.chat_message("user").write(prompt)
