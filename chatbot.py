@@ -6,6 +6,8 @@ import streamlit as st
 from openai import OpenAI
 from st_clickable_images import clickable_images
 
+import base_prompts as bp
+
 st.title("Data literacy chatbot")
 
 @st.dialog("What topic would you like to discuss?")
@@ -33,10 +35,12 @@ else:
         f"Let's start discussing {st.session_state.main_topic}! First, fill out the box below with your thesis and beliefs on the topic"
     )
 
-    main_thesis = st.text_input(
-        label="Thesis",
-        placeholder="Example: I believe that teenagers should not use social media because it is hurtful",
-    )
+    # removing this for now
+    # main_thesis = st.text_input(
+    #     label="Thesis",
+    #     placeholder="Example: I believe that teenagers should not use social media because it is hurtful",
+    # )
+    main_thesis = "I believe that teenagers should not use social media because it can polarize their views and they would lose their sense of nuance when discussing complex issues"
 
 
 if main_thesis != "":
@@ -52,7 +56,6 @@ if main_thesis != "":
                 encoded = base64.b64encode(image.read()).decode()
                 evidence_images.append(f"data:image/jpeg;base64,{encoded}")
 
-        # st.sidebar.image(clickable_images(evidence_images))
         clicked = clickable_images(
             evidence_images,
             titles=[f"Image #{str(i)}" for i in range(len(evidence_images))],
@@ -63,18 +66,34 @@ if main_thesis != "":
 
         st.session_state["clicked"] = clicked
 
+    st.session_state["messages"] = [
+        {"role": "system", "content": bp.SYSTEM_INSTRUCTIONS}
+    ]
+
     welcome_message = f'Ok, so you need to build an argument about \
     "{st.session_state.main_topic}" \
     and your starting point of view is "{main_thesis}".\nOn your left \
     your should be able to see evidences for the topic you want to discuss, \
     choose one and let\'s analyze it together'
 
-    if "messages" not in st.session_state:
-        st.session_state["messages"] = [
-            {"role": "assistant", "content": f"{welcome_message}"}
-        ]
+    st.chat_message("assistant").write(welcome_message)
 
-    for msg in st.session_state.messages:
+    # add the topic and thesis as context to the agent
+    st.session_state.messages.append({
+        "role": "user",
+        "content": f"We're discussing {st.session_state.main_topic} and my main thesis is \"{main_thesis}\""})
+
+    # if "messages" not in st.session_state:
+    #     st.session_state["messages"] = [
+    #         {"role": "assistant", "content": f"{welcome_message}"}
+    #     ]
+
+
+    # display message history
+    for idx, msg in enumerate(st.session_state.messages):
+        # skip system message
+        if idx == 0:
+            continue
         st.chat_message(msg["role"]).write(msg["content"])
 
     if prompt := st.chat_input():
@@ -91,9 +110,6 @@ if main_thesis != "":
                     "url": f"{evidence_images[st.session_state.clicked]}"
                     }
                 })
-
-            # reset clicked image
-            st.session_state.clicked = -1
 
         st.session_state.messages.append({"role": "user", "content": content})
         st.chat_message("user").write(prompt)

@@ -1,2 +1,4 @@
 # ignoring secrets
 .streamlit
+
+__pycache__/
