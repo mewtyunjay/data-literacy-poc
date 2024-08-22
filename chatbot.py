@@ -35,12 +35,11 @@ else:
         f"Let's start discussing {st.session_state.main_topic}! First, fill out the box below with your thesis and beliefs on the topic"
     )
 
-    # removing this for now
-    # main_thesis = st.text_input(
-    #     label="Thesis",
-    #     placeholder="Example: I believe that teenagers should not use social media because it is hurtful",
-    # )
-    main_thesis = "I believe that teenagers should not use social media because it can polarize their views and they would lose their sense of nuance when discussing complex issues"
+    main_thesis = st.text_input(
+        label="Thesis",
+        placeholder="Example: I believe that teenagers should not use social media because it is hurtful",
+    )
+    # main_thesis = "I believe that teenagers should not use social media because it can polarize their views and they would lose their sense of nuance when discussing complex issues"
 
 
 if main_thesis != "":
