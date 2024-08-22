@@ -1,5 +1,7 @@
 # ignoring secrets
 .streamlit
 
+__pycache__/
+
 .env
 .DS_Store
