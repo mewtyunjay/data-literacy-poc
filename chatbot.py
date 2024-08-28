@@ -5,6 +5,18 @@ import os
 import streamlit as st
 from openai import OpenAI
 from st_clickable_images import clickable_images
+import chromadb
+from chromadb.config import Settings
+
+chroma_client = chromadb.Client(Settings(persist_directory="./chroma_db"))
+collection = chroma_client.get_collection(name="image_vectors")
+
+def find_relevant_images(user_story, n=3):
+    results = collection.query(
+        query_texts=[user_story],
+        n_results=n
+    )
+    return results['ids']
 
 st.title("Data literacy chatbot")
 
@@ -80,6 +92,28 @@ if main_thesis != "":
     if prompt := st.chat_input():
         text_content = {"type": "text", "text": prompt}
         content = [text_content]
+        
+        # Find relevant images based on user input
+        relevant_image_ids = find_relevant_images(prompt)
+        
+        # Update sidebar with relevant images
+        with st.sidebar:
+            st.sidebar.title("Relevant Evidences")
+            relevant_evidence_paths = [f"evidence/{img_id}.png" for img_id in relevant_image_ids]
+            relevant_evidence_images = []
+            for file in relevant_evidence_paths:
+                with open(file, "rb") as image:
+                    encoded = base64.b64encode(image.read()).decode()
+                    relevant_evidence_images.append(f"data:image/jpeg;base64,{encoded}")
+            
+            clicked = clickable_images(
+                relevant_evidence_images,
+                titles=[f"Image #{str(i)}" for i in range(len(relevant_evidence_images))],
+                div_style={"display": "flex", "justify-content": "center", "flex-wrap": "wrap"},
+                img_style={"margin": "5px", "height": "200px"},
+            )
+
+        st.session_state["clicked"] = clicked
 
         if st.session_state.clicked > -1:
             st.image(evidence_paths[st.session_state.clicked])
