@@ -8,6 +8,19 @@ from st_clickable_images import clickable_images
 
 import base_prompts as bp
 
+def summarize_evidence_discussion(messages):
+    summary_prompt = "Summarize the key points of the discussion about this evidence image in a concise manner."
+    summary_messages = [
+        {"role": "system", "content": "You are an AI assistant that summarizes discussions about evidence images."},
+        *messages[1:],  # Exclude the system message
+        {"role": "user", "content": summary_prompt}
+    ]
+    summary_response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=summary_messages
+    )
+    return summary_response.choices[0].message.content
+
 st.title("Data literacy chatbot")
 
 @st.dialog("What topic would you like to discuss?")
@@ -31,89 +44,113 @@ main_thesis = ""
 if "main_topic" not in st.session_state:
     choose_main_topic()
 else:
-    st.write(
-        f"Let's start discussing {st.session_state.main_topic}! First, fill out the box below with your thesis and beliefs on the topic"
-    )
+    tab1, tab2 = st.tabs(["Main Discussion", "Evidence"])
 
-    main_thesis = st.text_input(
-        label="Thesis",
-        placeholder="Example: I believe that teenagers should not use social media because it is hurtful",
-    )
-    # main_thesis = "I believe that teenagers should not use social media because it can polarize their views and they would lose their sense of nuance when discussing complex issues"
-
-
-if main_thesis != "":
-    client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
-    # update sidebar with evidences
-    # TODO: create specific evidences for specific discussion topics
-    with st.sidebar:
-        st.sidebar.title("Evidences")
-        evidence_paths = glob.glob("evidence/*.png")
-        evidence_images = []
-        for file in evidence_paths:
-            with open(file, "rb") as image:
-                encoded = base64.b64encode(image.read()).decode()
-                evidence_images.append(f"data:image/jpeg;base64,{encoded}")
-
-        clicked = clickable_images(
-            evidence_images,
-            titles=[f"Image #{str(i)}" for i in range(len(evidence_images))],
-            div_style={"display": "flex", "justify-content": "center",
-                "flex-wrap": "wrap"},
-            img_style={"margin": "5px", "height": "200px"},
+    with tab1:
+        st.write(
+            f"Let's start discussing {st.session_state.main_topic}! First, fill out the box below with your thesis and beliefs on the topic"
         )
 
-        st.session_state["clicked"] = clicked
+        main_thesis = st.text_input(
+            label="Thesis",
+            placeholder="Example: I believe that teenagers should not use social media because it is hurtful",
+        )
 
-    st.session_state["messages"] = [
-        {"role": "system", "content": bp.SYSTEM_INSTRUCTIONS}
-    ]
+    if main_thesis != "":
+        client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+        
+        # Move evidence to sidebar
+        with st.sidebar:
+            st.sidebar.title("Evidences")
+            evidence_paths = glob.glob("evidence/*.png")
+            evidence_images = []
+            for file in evidence_paths:
+                with open(file, "rb") as image:
+                    encoded = base64.b64encode(image.read()).decode()
+                    evidence_images.append(f"data:image/jpeg;base64,{encoded}")
 
-    welcome_message = f'Ok, so you need to build an argument about \
-    "{st.session_state.main_topic}" \
-    and your starting point of view is "{main_thesis}".\nOn your left \
-    your should be able to see evidences for the topic you want to discuss, \
-    choose one and let\'s analyze it together'
+            clicked = clickable_images(
+                evidence_images,
+                titles=[f"Image #{str(i)}" for i in range(len(evidence_images))],
+                div_style={"display": "flex", "justify-content": "center", "flex-wrap": "wrap"},
+                img_style={"margin": "5px", "height": "200px"},
+            )
 
-    st.chat_message("assistant").write(welcome_message)
+            st.session_state["clicked"] = clicked
 
-    # add the topic and thesis as context to the agent
-    st.session_state.messages.append({
-        "role": "user",
-        "content": f"We're discussing {st.session_state.main_topic} and my main thesis is \"{main_thesis}\""})
+        # Main discussion tab
+        with tab1:
+            if "messages" not in st.session_state:
+                st.session_state["messages"] = [
+                    {"role": "system", "content": bp.SYSTEM_INSTRUCTIONS}
+                ]
 
-    # if "messages" not in st.session_state:
-    #     st.session_state["messages"] = [
-    #         {"role": "assistant", "content": f"{welcome_message}"}
-    #     ]
+                welcome_message = f'Ok, so you need to build an argument about \
+                "{st.session_state.main_topic}" \
+                and your starting point of view is "{main_thesis}".\nOn your left \
+                you should be able to see evidences for the topic you want to discuss, \
+                choose one and let\'s analyze it together'
 
+                st.chat_message("assistant").write(welcome_message)
 
-    # display message history
-    for idx, msg in enumerate(st.session_state.messages):
-        # skip system message
-        if idx == 0:
-            continue
-        st.chat_message(msg["role"]).write(msg["content"])
+                st.session_state.messages.append({
+                    "role": "user",
+                    "content": f"We're discussing {st.session_state.main_topic} and my main thesis is \"{main_thesis}\""})
 
-    if prompt := st.chat_input():
-        text_content = {"type": "text", "text": prompt}
-        content = [text_content]
+            # Display message history
+            for idx, msg in enumerate(st.session_state.messages):
+                if idx == 0:
+                    continue
+                st.chat_message(msg["role"]).write(msg["content"])
 
-        if st.session_state.clicked > -1:
-            st.image(evidence_paths[st.session_state.clicked])
+            if prompt := st.chat_input():
+                st.session_state.messages.append({"role": "user", "content": prompt})
+                st.chat_message("user").write(prompt)
+                response = client.chat.completions.create(model="gpt-4o-mini", messages=st.session_state.messages)
+                msg = response.choices[0].message.content
 
-            st.session_state.clicked_image = evidence_images[st.session_state.clicked]
-            content.append({
-                "type": "image_url",
-                "image_url": {
-                    "url": f"{evidence_images[st.session_state.clicked]}"
-                    }
-                })
+                st.session_state.messages.append({"role": "assistant", "content": msg})
+                st.chat_message("assistant").write(msg)
 
-        st.session_state.messages.append({"role": "user", "content": content})
-        st.chat_message("user").write(prompt)
-        response = client.chat.completions.create(model="gpt-4o-mini", messages=st.session_state.messages)
-        msg = response.choices[0].message.content
+        # Evidence tab
+        with tab2:
+            if st.session_state["clicked"] > -1:
+                st.image(evidence_paths[st.session_state["clicked"]])
+                
+                if "evidence_messages" not in st.session_state:
+                    st.session_state["evidence_messages"] = [
+                        {"role": "system", "content": "You are an AI assistant that helps analyze and discuss evidence images."}
+                    ]
 
-        st.session_state.messages.append({"role": "assistant", "content": msg})
-        st.chat_message("assistant").write(msg)
+                # Display evidence chat history
+                for msg in st.session_state["evidence_messages"][1:]:
+                    st.chat_message(msg["role"]).write(msg["content"])
+
+                evidence_prompt = st.chat_input("Discuss the evidence")
+                if evidence_prompt:
+                    st.session_state["evidence_messages"].append({"role": "user", "content": evidence_prompt})
+                    st.chat_message("user").write(evidence_prompt)
+
+                    evidence_response = client.chat.completions.create(
+                        model="gpt-4o-mini",
+                        messages=[
+                            *st.session_state["evidence_messages"],
+                            {
+                                "role": "user",
+                                "content": [
+                                    {"type": "text", "text": evidence_prompt},
+                                    {"type": "image_url", "image_url": {"url": evidence_images[st.session_state["clicked"]]}}
+                                ]
+                            }
+                        ]
+                    )
+                    evidence_msg = evidence_response.choices[0].message.content
+                    st.session_state["evidence_messages"].append({"role": "assistant", "content": evidence_msg})
+                    st.chat_message("assistant").write(evidence_msg)
+
+                    # Summarize the evidence discussion and add it to the main bot's context
+                    evidence_summary = summarize_evidence_discussion(st.session_state["evidence_messages"])
+                    st.session_state["messages"].append({
+                        "role": "system",
+                        "content": f"Evidence discussion summary: {evidence_summary}"
+                    })
