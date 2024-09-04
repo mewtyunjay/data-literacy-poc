@@ -9,6 +9,11 @@ from st_clickable_images import clickable_images
 import base_prompts as bp
 
 def discuss_evidence(evidence_img):
+    with st.sidebar:
+        st.markdown("[View the source code](https://github.com/mewtyunjay/data-literacy-poc)")
+        st.markdown("When you click on \"Save Evidence\", we create a summary of the conversation you had with the agent and then you can use this summary to create your data story")
+        st.button("Save Evidence")
+
     client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
     st.image(evidence_img)
     main_topic = "Social media usage by teenagers"
@@ -74,8 +79,6 @@ def discuss_evidence(evidence_img):
 #         st.rerun()
 
 
-# with st.sidebar:
-#     "[View the source code](https://github.com/mewtyunjay/data-literacy-poc)"
 
 # main_thesis = ""
 
