@@ -4,48 +4,44 @@ import os
 
 import streamlit as st
 from st_clickable_images import clickable_images
-from streamlit_extras.switch_page_button import switch_page
 
-# from chatbot import discuss_evidence
+st.set_page_config(
+    page_title="Evidence Selector",
+    page_icon=":bookmark_tabs:",
+    layout="wide",
+    initial_sidebar_state="collapsed",
+    )
 
-st.title(":bookmark_tabs: Evidence Selector")
-st.text("Choose one image from the list below")
 
-# define our two columns
-image_list, image_selection = st.columns(2, gap="large")
+st.markdown("# Choose one image from the list below")
 
-img = st.query_params.get("img", None)
-img_index = st.query_params.get("img_index", None)
-clicked = -1
+# define our two columns and make sure image_list is 2x the size of
+# image_selection
+image_list, image_selection = st.columns((2,1), gap="large")
 
 with image_list:
-    # initialize evidence images
-    evidence_paths = glob.glob("evidence/*.png")
-    evidence_images = []
-    for file in evidence_paths:
-        with open(file, "rb") as image:
-            encoded = base64.b64encode(image.read()).decode()
-            evidence_images.append(f"data:image/jpeg;base64,{encoded}")
+    img_container = image_list.container(height=1000)
+    with img_container:
+        evidence_paths = glob.glob("evidence/*.png")
+        evidence_images = []
+        for file in evidence_paths:
+            with open(file, "rb") as image:
+                encoded = base64.b64encode(image.read()).decode()
+                evidence_images.append(f"data:image/jpeg;base64,{encoded}")
 
-    if img is None:
         clicked = clickable_images(
             evidence_images,
-            titles=[f"Image #{str(i)}" for i in range(5)],
+            titles=[f"{os.path.basename(i)}" for i in evidence_paths],
             # div_style={"display": "flex", "flex-wrap": "wrap"},
-            img_style={"height": "400px"},
+            # img_style={"heigth": "100px"},
         )
 
-        # wtf
-        clicked = clicked
-
 with image_selection:
-    if img is not None and img_index is not None:
-        img_index = int(img_index)
-    elif img is None and clicked > -1:
-        f"## {clicked} is a great choice! "
-        st.image(evidence_images[clicked], caption=f"{clicked}!")
+    if clicked > -1:
+        st.image(evidence_images[clicked],
+                caption=f"{os.path.basename(evidence_paths[clicked])}")
         st.link_button(
             url=f"./chatbot?img_index={clicked}",
-            label=f"Discuss image {clicked}",
+            label="Discuss this image",
             use_container_width=True
         )
