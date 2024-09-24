@@ -8,62 +8,71 @@ from st_clickable_images import clickable_images
 
 import base_prompts as bp
 
-def discuss_evidence(evidence_img):
-    with st.sidebar:
-        st.markdown("[View the source code](https://github.com/mewtyunjay/data-literacy-poc)")
-        st.markdown("When you click on \"Save Evidence\", we create a summary of the conversation you had with the agent and then you can use this summary to create your data story")
-        st.button("Save Evidence")
+img_index = int(st.query_params.get("img_index", None))
 
-    client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
-    st.image(evidence_img)
-    main_topic = "Social media usage by teenagers"
-    main_thesis = "test"
-    st.session_state["messages"] = [
-        {"role": "system", "content": bp.SYSTEM_INSTRUCTIONS}
-    ]
+evidence_paths = glob.glob("evidence/*.png")
+evidence_images = []
+for file in evidence_paths:
+    with open(file, "rb") as image:
+        encoded = base64.b64encode(image.read()).decode()
+        evidence_images.append(f"data:image/jpeg;base64,{encoded}")
 
-    welcome_message = f'Ok, so you need to build an argument about \
-    "{main_topic}" \
-    and your starting point of view is "{main_thesis}".\nOn your left \
-    your should be able to see evidences for the topic you want to discuss, \
-    choose one and let\'s analyze it together'
+chosen_evidence = evidence_images[img_index]
+st.image(chosen_evidence)
 
-    st.chat_message("assistant").write(welcome_message)
+with st.sidebar:
+    st.markdown("[View the source code](https://github.com/mewtyunjay/data-literacy-poc)")
+    st.markdown("When you click on \"Save Evidence\", we create a summary of the conversation you had with the agent and then you can use this summary to create your data story")
+    st.button("Save Evidence")
 
-    # add the topic and thesis as context to the agent
-    st.session_state.messages.append({
-        "role": "user",
-        "content": f"We're discussing {main_topic} and my main thesis is \"{main_thesis}\""})
+client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+main_topic = "Social media usage by teenagers"
+main_thesis = "test"
+st.session_state["messages"] = [
+    {"role": "system", "content": bp.SYSTEM_INSTRUCTIONS}
+]
 
-    content = []
-    content.append({
-        "type": "image_url",
-        "image_url": {
-            "url": f"{evidence_img}"
-            }
-        })
+welcome_message = f'Ok, so you need to build an argument about \
+"{main_topic}" \
+and your starting point of view is "{main_thesis}".\
+You chose this image to discuss.'
 
-    # display message history
-    for idx, msg in enumerate(st.session_state.messages):
-        # skip system message
-        if idx == 0:
-            continue
-        st.chat_message(msg["role"]).write(msg["content"])
+st.chat_message("assistant").write(welcome_message)
 
-    if prompt := st.chat_input():
-        text_content = {"type": "text", "text": prompt}
-        content = [text_content]
+# add the topic and thesis as context to the agent
+st.session_state.messages.append({
+    "role": "user",
+    "content": f"We're discussing {main_topic} and my main thesis is \"{main_thesis}\""})
 
-        st.session_state.messages.append({"role": "user", "content": content})
-        st.chat_message("user").write(prompt)
-        response = client.chat.completions.create(model="gpt-4o-mini", messages=st.session_state.messages)
-        msg = response.choices[0].message.content
+content = []
+content.append({
+    "type": "image_url",
+    "image_url": {
+        "url": f"{chosen_evidence}"
+        }
+    })
 
-        st.session_state.messages.append({"role": "assistant", "content": msg})
-        st.chat_message("assistant").write(msg)
-    return
+# display message history
+for idx, msg in enumerate(st.session_state.messages):
+    # skip system message
+    if idx == 0:
+        continue
+    st.chat_message(msg["role"]).write(msg["content"])
+
+if prompt := st.chat_input():
+    text_content = {"type": "text", "text": prompt}
+    content = [text_content]
+
+    st.session_state.messages.append({"role": "user", "content": content})
+    st.chat_message("user").write(prompt)
+    response = client.chat.completions.create(model="gpt-4o-mini", messages=st.session_state.messages)
+    msg = response.choices[0].message.content
+
+    st.session_state.messages.append({"role": "assistant", "content": msg})
+    st.chat_message("assistant").write(msg)
 
 
+#########################################################################################
 # st.title("Data literacy chatbot")
 
 # @st.dialog("What topic would you like to discuss?")
