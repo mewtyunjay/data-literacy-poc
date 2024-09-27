@@ -6,6 +6,5 @@ Question the student thesis and show possible counterarguments.
 """
 
 IMAGE_PROMPT = """
-Please analyze the image and provide a detailed description of what data it represents, including any trends, patterns, or significant data points. Point possible limitations of the data.
-Keep analysis short and simple language. Provoke the student thesis and offer an argument against their thesis to show potential biases.
+Provide an analysis of this image. Keep the answer to a maximum of 10 bullet points. Talk about the image axes and the information the image present. Keep language simple. Provide insights of its limitations and potential biases, e.g. data collection.
 """
