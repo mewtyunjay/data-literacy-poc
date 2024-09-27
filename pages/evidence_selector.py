@@ -10,10 +10,12 @@ st.set_page_config(
     page_icon=":bookmark_tabs:",
     layout="wide",
     initial_sidebar_state="collapsed",
-    )
+)
+st.sidebar.header("Evidence Selector")
 
 
-st.markdown("# Choose one image from the list below")
+st.markdown("# Evidence Selector")
+st.markdown("## Choose one image from the list below")
 
 # define our two columns and make sure image_list is 2x the size of
 # image_selection
