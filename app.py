@@ -15,7 +15,9 @@ There are two main functionalities we would like to test here:
 
 * Data Story Helper: this tool helps the student to build a coherent story from the discussed evidences.
 
-You can access both on the links below.
+To achieve that, we are restricting this proof-of-concept to discuss only evidences related to Social Media Usage by Teenagers.
+
+The buttons below will direct you to the two tools.
 """)
 
 es = st.button("Evidence Selector")
